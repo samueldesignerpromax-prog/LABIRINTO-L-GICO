@@ -2,22 +2,25 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🧩 LABIRINTO LÓGICO 3D - Puzzle Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🧩 Puzzle 3D - Mobile</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             user-select: none;
+            touch-action: manipulation;
         }
         
         body {
             overflow: hidden;
-            font-family: 'Segoe UI', 'Arial', sans-serif;
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            touch-action: none;
         }
         
-        /* UI Principal */
+        /* UI */
         #ui {
             position: absolute;
             top: 0;
@@ -28,249 +31,837 @@
             z-index: 1000;
         }
         
-        /* Header com informações */
-        .game-header {
+        .panel {
             position: absolute;
-            top: 20px;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            padding: 10px 15px;
+            border-radius: 15px;
+            color: white;
+            border-left: 4px solid #ffd700;
+            pointer-events: auto;
+            font-family: monospace;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .stat {
+            text-align: center;
+            flex: 1;
+            min-width: 60px;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #aaa;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4ade80;
+        }
+        
+        .stat-value.danger {
+            color: #ff4444;
+        }
+        
+        .health-bar {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff8888);
+            width: 100%;
+            transition: width 0.3s;
+        }
+        
+        /* Botões Touch */
+        .touch-controls {
+            position: absolute;
+            bottom: 20px;
             left: 0;
             right: 0;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
             pointer-events: auto;
+            z-index: 2000;
         }
         
-        .info-card {
-            background: linear-gradient(135deg, rgba(0,0,0,0.85), rgba(0,0,0,0.7));
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 12px 25px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            min-width: 150px;
-        }
-        
-        .info-label {
-            font-size: 11px;
-            color: #aaa;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-        
-        .info-value {
-            font-size: 28px;
+        .touch-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
             font-weight: bold;
-            color: #ffd700;
-        }
-        
-        .level-value {
-            font-size: 24px;
-            color: #ff6b6b;
-        }
-        
-        /* Mensagens do jogo */
-        .message-area {
-            position: absolute;
-            bottom: 30%;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            pointer-events: none;
-        }
-        
-        .game-message {
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(10px);
-            padding: 15px 30px;
-            border-radius: 50px;
-            color: #ffd700;
-            font-size: 20px;
-            font-weight: bold;
-            border: 1px solid #ffd700;
-            white-space: nowrap;
-            animation: pulse 1s ease-out;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        /* Objetivo */
-        .objective {
-            position: absolute;
-            top: 120px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 10px 15px;
-            border-left: 3px solid #ffd700;
-            pointer-events: auto;
-        }
-        
-        .objective p {
             color: white;
-            font-size: 12px;
-            margin: 2px 0;
+            cursor: pointer;
+            transition: all 0.05s;
+            border: 2px solid rgba(255,255,255,0.3);
+            touch-action: manipulation;
         }
         
-        .objective .title {
-            color: #ffd700;
-            font-weight: bold;
-            margin-bottom: 5px;
+        .touch-btn:active {
+            background: rgba(255,255,255,0.4);
+            transform: scale(0.95);
         }
         
-        /* Controles */
+        .touch-btn.reset {
+            background: rgba(255,68,68,0.3);
+            border-color: #ff4444;
+        }
+        
+        .dpad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .dpad-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        
         .controls {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
+            bottom: 100px;
+            left: 10px;
             background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(10px);
+            padding: 8px 12px;
             border-radius: 10px;
-            padding: 10px 15px;
-            font-size: 11px;
             color: #ccc;
-            font-family: monospace;
-            pointer-events: auto;
-        }
-        
-        .controls span {
-            color: #ffd700;
-            font-weight: bold;
-        }
-        
-        /* Botão reiniciar */
-        .reset-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            pointer-events: auto;
-            transition: transform 0.2s, box-shadow 0.2s;
-            font-family: inherit;
-        }
-        
-        .reset-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
-        }
-        
-        /* Partículas de sucesso */
-        .confetti {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: #ffd700;
-            position: absolute;
-            animation: confettiFall 2s ease-out forwards;
+            font-size: 10px;
             pointer-events: none;
         }
         
-        @keyframes confettiFall {
-            0% {
-                transform: translateY(-100px) rotate(0deg);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
-            }
+        .message {
+            position: absolute;
+            bottom: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 50px;
+            color: #ffd700;
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 2000;
+            animation: fadeOut 2.5s forwards;
+            border: 1px solid #ffd700;
         }
         
-        /* Loading */
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateX(-50%) scale(1); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) scale(1.1); visibility: hidden; }
+        }
+        
+        .damage-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,0,0,0.3);
+            pointer-events: none;
+            animation: flash 0.3s ease-out;
+            z-index: 1500;
+        }
+        
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
         #loading {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 20px;
             text-align: center;
             color: white;
             z-index: 10000;
-            background: rgba(0,0,0,0.9);
-            padding: 30px;
-            border-radius: 20px;
         }
         
         .loader {
             width: 200px;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
+            height: 3px;
+            background: #333;
             border-radius: 2px;
+            margin-top: 15px;
             overflow: hidden;
-            margin-top: 10px;
         }
         
         .loader-fill {
-            width: 0%;
+            width: 100%;
             height: 100%;
             background: linear-gradient(90deg, #667eea, #764ba2);
-            animation: loading 1s ease-out forwards;
+            animation: loading 1s ease;
         }
         
         @keyframes loading {
+            from { width: 0%; }
             to { width: 100%; }
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            z-index: 5000;
+            border: 2px solid #ff4444;
+            min-width: 280px;
+        }
+        
+        .game-over h1 {
+            color: #ff4444;
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+        
+        .game-over button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            color: white;
+            font-size: 16px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 600px) {
+            .touch-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+            .stat-value {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <div id="loading">
-        <h2>🧩 CARREGANDO LABIRINTO</h2>
-        <div class="loader">
-            <div class="loader-fill"></div>
-        </div>
-        <p style="margin-top: 10px;">Construindo os puzzles...</p>
+        <h2>⚔️ PUZZLE 3D</h2>
+        <div class="loader"><div class="loader-fill"></div></div>
+        <p>Toque na tela para jogar!</p>
     </div>
 
     <div id="ui" style="display: none;">
-        <div class="game-header">
-            <div class="info-card">
-                <div class="info-label">🎯 OBJETIVO</div>
-                <div class="info-value" id="objective-counter">0/3</div>
+        <div class="panel">
+            <div class="stat">
+                <div class="stat-label">🎯 BOTÕES</div>
+                <div class="stat-value" id="progress">0/2</div>
             </div>
-            <div class="info-card">
-                <div class="info-label">🌟 NÍVEL</div>
-                <div class="info-value level-value" id="level-display">1</div>
+            <div class="stat">
+                <div class="stat-label">🌟 NÍVEL</div>
+                <div class="stat-value" id="level">1</div>
             </div>
-            <div class="info-card">
-                <div class="info-label">⏱️ TEMPO</div>
-                <div class="info-value" id="timer-display">00:00</div>
+            <div class="stat">
+                <div class="stat-label">💀 INIMIGOS</div>
+                <div class="stat-value danger" id="enemies">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">❤️ VIDA</div>
+                <div class="stat-value" id="health">100</div>
+                <div class="health-bar"><div class="health-fill" id="healthFill"></div></div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">⏱️ TEMPO</div>
+                <div class="stat-value" id="timer">00:00</div>
             </div>
         </div>
         
-        <div class="objective">
-            <div class="title">📋 MISSÃO ATUAL</div>
-            <p id="objective-text">Ative todos os botões e chegue à saída!</p>
+        <!-- Controles Touch -->
+        <div class="touch-controls">
+            <div class="dpad">
+                <div class="dpad-row">
+                    <div class="touch-btn" id="btnUp">▲</div>
+                </div>
+                <div class="dpad-row">
+                    <div class="touch-btn" id="btnLeft">◀</div>
+                    <div class="touch-btn" id="btnDown">▼</div>
+                    <div class="touch-btn" id="btnRight">▶</div>
+                </div>
+            </div>
+            <div class="touch-btn reset" id="btnReset">🔄</div>
         </div>
         
         <div class="controls">
-            🎮 <span>WASD/SETAS</span> = Movimento | <span>R</span> = Reiniciar nível
+            🎮 Toque nos botões para movimentar
         </div>
-        
-        <button class="reset-btn" id="reset-btn">🔄 REINICIAR NÍVEL</button>
-        
-        <div class="message-area" id="message-area"></div>
     </div>
 
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
             }
         }
     </script>
-    
-    <script type="module" src="main.js"></script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ========== DETECTAR DISPOSITIVO ==========
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // ========== INICIALIZAÇÃO ==========
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a2a);
+        scene.fog = new THREE.FogExp2(0x0a0a2a, 0.008);
+
+        // Ajustar fov para mobile
+        const fov = isMobile ? 70 : 60;
+        const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(8, 8, 12);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        // ========== LUZES ==========
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        dirLight.position.set(5, 12, 4);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        const fillLight = new THREE.PointLight(0x4466cc, 0.3);
+        fillLight.position.set(-2, 4, -3);
+        scene.add(fillLight);
+
+        // ========== CHÃO ==========
+        const ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(20, 20),
+            new THREE.MeshStandardMaterial({ color: 0x1a2a1a, roughness: 0.8 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const grid = new THREE.GridHelper(20, 20, 0x88aa88, 0x446644);
+        grid.position.y = -0.45;
+        scene.add(grid);
+
+        // ========== CLASSE DO INIMIGO ==========
+        class Enemy {
+            constructor(x, z, color, speed) {
+                this.x = x;
+                this.z = z;
+                this.speed = speed;
+                this.active = true;
+                
+                const group = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: color }));
+                body.castShadow = true;
+                body.position.y = 0.3;
+                group.add(body);
+                
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x440000 });
+                const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), eyeMat);
+                leftEye.position.set(-0.15, 0.45, 0.3);
+                const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), eyeMat);
+                rightEye.position.set(0.15, 0.45, 0.3);
+                group.add(leftEye, rightEye);
+                
+                group.position.set(x, 0, z);
+                scene.add(group);
+                this.mesh = group;
+                this.originalX = x;
+                this.originalZ = z;
+                this.patrolAngle = Math.random() * Math.PI * 2;
+            }
+            
+            update(playerPos, delta, level) {
+                if (!this.active) return;
+                const dx = playerPos.x - this.x;
+                const dz = playerPos.z - this.z;
+                const dist = Math.hypot(dx, dz);
+                const chaseRange = 4 + level * 0.5;
+                
+                if (dist < chaseRange) {
+                    const angle = Math.atan2(dz, dx);
+                    this.x += Math.cos(angle) * this.speed * delta;
+                    this.z += Math.sin(angle) * this.speed * delta;
+                    this.mesh.rotation.y = angle;
+                } else {
+                    this.patrolAngle += delta * 1.5;
+                    this.x = this.originalX + Math.cos(this.patrolAngle) * 1.5;
+                    this.z = this.originalZ + Math.sin(this.patrolAngle * 0.7) * 1.5;
+                }
+                
+                this.x = Math.max(-6.5, Math.min(6.5, this.x));
+                this.z = Math.max(-6.5, Math.min(6.5, this.z));
+                this.mesh.position.x = this.x;
+                this.mesh.position.z = this.z;
+                this.mesh.position.y = Math.sin(Date.now() * 0.005) * 0.05;
+                return dist;
+            }
+            
+            getPosition() { return { x: this.x, z: this.z }; }
+        }
+
+        // ========== CONFIGURAÇÃO DOS NÍVEIS ==========
+        const levelConfigs = {
+            1: {
+                walls: [
+                    { x: 0, z: -7, w: 14, d: 0.3 }, { x: 0, z: 7, w: 14, d: 0.3 },
+                    { x: -7, z: 0, w: 0.3, d: 14 }, { x: 7, z: 0, w: 0.3, d: 14 },
+                    { x: -3, z: -3, w: 0.3, d: 4 }, { x: 3, z: -2, w: 0.3, d: 4 },
+                    { x: -2, z: 3, w: 5, d: 0.3 }, { x: 2, z: 0, w: 5, d: 0.3 }
+                ],
+                buttons: [{ x: -4, z: -2, id: 0 }, { x: 4, z: 2, id: 1 }],
+                doors: [{ x: -1.5, z: 0, buttonId: 0 }, { x: 1.5, z: 0, buttonId: 1 }],
+                enemies: [{ x: -2, z: -1, color: 0xaa3333, speed: 1.2 }, { x: 2, z: 1, color: 0xaa3333, speed: 1.2 }],
+                portalPos: { x: 0, z: -5 }
+            },
+            2: {
+                walls: [
+                    { x: 0, z: -7, w: 14, d: 0.3 }, { x: 0, z: 7, w: 14, d: 0.3 },
+                    { x: -7, z: 0, w: 0.3, d: 14 }, { x: 7, z: 0, w: 0.3, d: 14 },
+                    { x: -3, z: -4, w: 0.3, d: 4 }, { x: 3, z: -3, w: 0.3, d: 5 },
+                    { x: -4, z: 2, w: 4, d: 0.3 }, { x: 2, z: 3, w: 4, d: 0.3 }
+                ],
+                buttons: [{ x: -4, z: -3, id: 0 }, { x: 4, z: -2, id: 1 }, { x: 0, z: 4, id: 2 }],
+                doors: [{ x: -2, z: 0, buttonId: 0 }, { x: 2, z: 0, buttonId: 1 }, { x: 0, z: 1.5, buttonId: 2 }],
+                enemies: [
+                    { x: -3, z: -1, color: 0xcc4444, speed: 1.5 },
+                    { x: 3, z: 1, color: 0xcc4444, speed: 1.5 },
+                    { x: 0, z: -3, color: 0xcc4444, speed: 1.3 }
+                ],
+                portalPos: { x: 0, z: -5.5 }
+            },
+            3: {
+                walls: [
+                    { x: 0, z: -7, w: 14, d: 0.3 }, { x: 0, z: 7, w: 14, d: 0.3 },
+                    { x: -7, z: 0, w: 0.3, d: 14 }, { x: 7, z: 0, w: 0.3, d: 14 },
+                    { x: -4, z: -4, w: 0.3, d: 4 }, { x: 4, z: -4, w: 0.3, d: 4 },
+                    { x: -4, z: 2, w: 4, d: 0.3 }, { x: 2, z: 4, w: 4, d: 0.3 }
+                ],
+                buttons: [
+                    { x: -5, z: -3, id: 0 }, { x: 0, z: -4, id: 1 }, { x: 5, z: -3, id: 2 },
+                    { x: -3, z: 5, id: 3 }, { x: 3, z: 5, id: 4 }
+                ],
+                doors: [
+                    { x: -2, z: -1, buttonId: 0 }, { x: 2, z: -1, buttonId: 1 },
+                    { x: -1.5, z: 2, buttonId: 2 }, { x: 1.5, z: 2, buttonId: 3 },
+                    { x: 0, z: 3, buttonId: 4 }
+                ],
+                enemies: [
+                    { x: -3, z: -2, color: 0xdd5555, speed: 1.8 },
+                    { x: 3, z: -2, color: 0xdd5555, speed: 1.8 },
+                    { x: 0, z: 2, color: 0xdd5555, speed: 1.6 },
+                    { x: -2, z: 4, color: 0xdd5555, speed: 1.7 },
+                    { x: 2, z: 4, color: 0xdd5555, speed: 1.7 }
+                ],
+                portalPos: { x: 0, z: -6 }
+            }
+        };
+
+        // ========== VARIÁVEIS ==========
+        let walls = [], buttons = [], doors = [], enemies = [], portal = null, player = null;
+        let currentLevel = 1, objectives = 0, totalObjectives = 0;
+        let playerHealth = 100, gameActive = true, levelComplete = false, gameTime = 0, timerInterval;
+        let invincibleFrames = 0;
+        
+        // Controles (touch e teclado)
+        const touchState = { up: false, down: false, left: false, right: false };
+        let useTouch = false;
+
+        // ========== FUNÇÕES ==========
+        function clearLevel() {
+            walls.forEach(w => scene.remove(w.mesh));
+            walls = [];
+            buttons.forEach(b => { scene.remove(b.base); scene.remove(b.mesh); scene.remove(b.ring); });
+            buttons = [];
+            doors.forEach(d => scene.remove(d.mesh));
+            doors = [];
+            enemies.forEach(e => scene.remove(e.mesh));
+            enemies = [];
+            if (portal) { scene.remove(portal.base); scene.remove(portal.ring); }
+        }
+        
+        function loadLevel(level) {
+            clearLevel();
+            const config = levelConfigs[level];
+            if (!config) return;
+            
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x6b5a4a, roughness: 0.7 });
+            config.walls.forEach(w => {
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(w.w, 1, w.d), wallMat);
+                wall.position.set(w.x, 0.5, w.z);
+                wall.castShadow = true;
+                scene.add(wall);
+                walls.push({ mesh: wall, x: w.x, z: w.z, sizeX: w.w / 2, sizeZ: w.d / 2 });
+            });
+            
+            config.buttons.forEach(btn => {
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.1, 16), new THREE.MeshStandardMaterial({ color: 0x666666 }));
+                base.position.set(btn.x, 0.05, btn.z);
+                scene.add(base);
+                const btnMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.15, 16), new THREE.MeshStandardMaterial({ color: 0xff4444 }));
+                btnMesh.position.set(btn.x, 0.15, btn.z);
+                scene.add(btnMesh);
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.05, 16, 32), new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+                ring.position.set(btn.x, 0.08, btn.z);
+                ring.rotation.x = Math.PI / 2;
+                scene.add(ring);
+                buttons.push({ ...btn, pressed: false, mesh: btnMesh, ring: ring, base: base });
+            });
+            
+            config.doors.forEach(door => {
+                const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.1), new THREE.MeshStandardMaterial({ color: 0x8b5a2b }));
+                doorMesh.position.set(door.x, 0.75, door.z);
+                scene.add(doorMesh);
+                doors.push({ ...door, isOpen: false, mesh: doorMesh });
+            });
+            
+            config.enemies.forEach(e => { enemies.push(new Enemy(e.x, e.z, e.color, e.speed)); });
+            
+            portal = {
+                x: config.portalPos.x, z: config.portalPos.z, active: false,
+                base: new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 0.1, 16), new THREE.MeshStandardMaterial({ color: 0x4a90e2 })),
+                ring: new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.08, 16, 48), new THREE.MeshStandardMaterial({ color: 0x00aaff }))
+            };
+            portal.base.position.set(portal.x, 0.05, portal.z);
+            portal.ring.position.set(portal.x, 0.5, portal.z);
+            portal.ring.rotation.x = Math.PI / 2;
+            scene.add(portal.base, portal.ring);
+            
+            totalObjectives = buttons.length;
+            objectives = 0;
+            updateUI();
+            document.getElementById('enemies').innerHTML = enemies.length;
+        }
+        
+        function createPlayer() {
+            if (player) scene.remove(player);
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.7), new THREE.MeshStandardMaterial({ color: 0x4a90e2 }));
+            body.castShadow = true;
+            body.position.y = 0.4;
+            group.add(body);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), new THREE.MeshStandardMaterial({ color: 0xffccaa }));
+            head.position.y = 0.85;
+            group.add(head);
+            group.position.set(0, 0, 4);
+            scene.add(group);
+            return group;
+        }
+        
+        function updateMovement(delta) {
+            let moveX = 0, moveZ = 0;
+            const touch = useTouch ? touchState : null;
+            const upActive = useTouch ? touchState.up : (keys.up);
+            const downActive = useTouch ? touchState.down : (keys.down);
+            const leftActive = useTouch ? touchState.left : (keys.left);
+            const rightActive = useTouch ? touchState.right : (keys.right);
+            
+            if (upActive) moveZ -= 1;
+            if (downActive) moveZ += 1;
+            if (leftActive) moveX -= 1;
+            if (rightActive) moveX += 1;
+            
+            if (moveX !== 0 || moveZ !== 0) {
+                const len = Math.hypot(moveX, moveZ);
+                moveX /= len;
+                moveZ /= len;
+            }
+            
+            const speed = 5;
+            let newX = player.position.x + moveX * speed * delta;
+            let newZ = player.position.z + moveZ * speed * delta;
+            const playerSize = 0.35;
+            
+            let canX = true, canZ = true;
+            for (let w of walls) {
+                if (Math.abs(newX - w.x) < playerSize + w.sizeX && Math.abs(player.position.z - w.z) < playerSize + w.sizeZ) canX = false;
+                if (Math.abs(player.position.x - w.x) < playerSize + w.sizeX && Math.abs(newZ - w.z) < playerSize + w.sizeZ) canZ = false;
+            }
+            for (let d of doors) {
+                if (!d.isOpen) {
+                    if (Math.abs(newX - d.x) < playerSize + 0.4 && Math.abs(player.position.z - d.z) < playerSize + 0.4) canX = false;
+                    if (Math.abs(player.position.x - d.x) < playerSize + 0.4 && Math.abs(newZ - d.z) < playerSize + 0.4) canZ = false;
+                }
+            }
+            if (canX) player.position.x = newX;
+            if (canZ) player.position.z = newZ;
+            if (moveX !== 0 || moveZ !== 0) player.rotation.y = Math.atan2(moveX, moveZ);
+        }
+        
+        function checkInteractions(delta) {
+            const playerPos = player.position;
+            for (let btn of buttons) {
+                if (!btn.pressed && Math.hypot(playerPos.x - btn.x, playerPos.z - btn.z) < 0.7) {
+                    btn.pressed = true;
+                    btn.mesh.position.y = 0.08;
+                    btn.mesh.material.color.setHex(0x44ff44);
+                    btn.ring.material.color.setHex(0x44ff44);
+                    objectives++;
+                    updateUI();
+                    showMessage(`🔘 Botão ${btn.id + 1} ativado!`);
+                    for (let door of doors) {
+                        if (door.buttonId === btn.id && !door.isOpen) {
+                            door.isOpen = true;
+                            let y = 0.75;
+                            const animate = () => { y += 0.1; door.mesh.position.y = y; if (y < 2) requestAnimationFrame(animate); };
+                            animate();
+                        }
+                    }
+                }
+            }
+            
+            if (invincibleFrames > 0) invincibleFrames -= delta;
+            for (let enemy of enemies) {
+                const enemyPos = enemy.getPosition();
+                if (Math.hypot(playerPos.x - enemyPos.x, playerPos.z - enemyPos.z) < 0.7 && invincibleFrames <= 0 && gameActive && !levelComplete) {
+                    playerHealth = Math.max(0, playerHealth - (10 + (currentLevel - 1) * 5));
+                    invincibleFrames = 1.0;
+                    updateUI();
+                    const flash = document.createElement('div');
+                    flash.className = 'damage-flash';
+                    document.body.appendChild(flash);
+                    setTimeout(() => flash.remove(), 300);
+                    if (playerHealth <= 0) gameOver();
+                }
+            }
+            
+            if (portal.active && !levelComplete && Math.hypot(playerPos.x - portal.x, playerPos.z - portal.z) < 0.8) completeLevel();
+        }
+        
+        function updateEnemies(delta) {
+            enemies.forEach(e => e.update(player.position, delta, currentLevel));
+        }
+        
+        function updateUI() {
+            document.getElementById('progress').innerHTML = `${objectives}/${totalObjectives}`;
+            document.getElementById('level').innerHTML = currentLevel;
+            document.getElementById('health').innerHTML = playerHealth;
+            document.getElementById('healthFill').style.width = `${playerHealth}%`;
+            if (objectives === totalObjectives && !portal.active) {
+                portal.active = true;
+                portal.ring.material.color.setHex(0x44ff44);
+                portal.ring.material.emissiveIntensity = 0.5;
+                showMessage("✨ PORTAL ABERTO! VÁ ATÉ ELE! ✨");
+            }
+        }
+        
+        function showMessage(text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+            msgDiv.textContent = text;
+            document.body.appendChild(msgDiv);
+            setTimeout(() => msgDiv.remove(), 2500);
+        }
+        
+        function completeLevel() {
+            if (levelComplete) return;
+            levelComplete = true;
+            gameActive = false;
+            showMessage(`🎉 NÍVEL ${currentLevel} COMPLETO! 🎉`);
+            for (let i = 0; i < 40; i++) {
+                const conf = document.createElement('div');
+                conf.style.position = 'absolute';
+                conf.style.width = '8px';
+                conf.style.height = '8px';
+                conf.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                conf.style.left = Math.random() * window.innerWidth + 'px';
+                conf.style.top = '-10px';
+                conf.style.pointerEvents = 'none';
+                document.body.appendChild(conf);
+                let y = 0;
+                const fall = () => { y += 6; conf.style.top = y + 'px'; if (y < window.innerHeight) requestAnimationFrame(fall); else conf.remove(); };
+                fall();
+            }
+            setTimeout(() => {
+                currentLevel++;
+                if (currentLevel > 3) showMessage("🏆 PARABÉNS! VOCÊ ZEROU O JOGO! 🏆");
+                else resetGame();
+            }, 3000);
+        }
+        
+        function gameOver() {
+            gameActive = false;
+            const div = document.createElement('div');
+            div.className = 'game-over';
+            div.innerHTML = `<h1>💀 GAME OVER 💀</h1><p>Nível: ${currentLevel}</p><p>Tempo: ${document.getElementById('timer').innerHTML}</p><button onclick="location.reload()">🔁 JOGAR NOVAMENTE</button>`;
+            document.body.appendChild(div);
+        }
+        
+        function resetGame() {
+            if (currentLevel > 3) currentLevel = 1;
+            playerHealth = 100;
+            gameActive = true;
+            levelComplete = false;
+            objectives = 0;
+            portal = null;
+            invincibleFrames = 0;
+            loadLevel(currentLevel);
+            if (player) scene.remove(player);
+            player = createPlayer();
+            updateUI();
+            showMessage(`🔄 Nível ${currentLevel} - CUIDADO COM OS INIMIGOS!`);
+        }
+        
+        function updateCamera() {
+            const targetX = player.position.x;
+            const targetZ = player.position.z;
+            camera.position.x += (targetX - camera.position.x) * 0.08;
+            camera.position.z += (targetZ + 7 - camera.position.z) * 0.08;
+            camera.position.y += (player.position.y + 5 - camera.position.y) * 0.08;
+            camera.lookAt(player.position);
+        }
+        
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            gameTime = 0;
+            timerInterval = setInterval(() => {
+                if (gameActive && !levelComplete) {
+                    gameTime++;
+                    const mins = Math.floor(gameTime / 60);
+                    const secs = gameTime % 60;
+                    document.getElementById('timer').innerHTML = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+        
+        // ========== CONTROLES ==========
+        // Teclado (PC)
+        const keys = { up: false, down: false, left: false, right: false };
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (key === 'ArrowUp' || key === 'w' || key === 'W') keys.up = true;
+            if (key === 'ArrowDown' || key === 's' || key === 'S') keys.down = true;
+            if (key === 'ArrowLeft' || key === 'a' || key === 'A') keys.left = true;
+            if (key === 'ArrowRight' || key === 'd' || key === 'D') keys.right = true;
+            if (key === 'r' || key === 'R') resetGame();
+            e.preventDefault();
+            useTouch = false;
+        });
+        document.addEventListener('keyup', (e) => {
+            const key = e.key;
+            if (key === 'ArrowUp' || key === 'w' || key === 'W') keys.up = false;
+            if (key === 'ArrowDown' || key === 's' || key === 'S') keys.down = false;
+            if (key === 'ArrowLeft' || key === 'a' || key === 'A') keys.left = false;
+            if (key === 'ArrowRight' || key === 'd' || key === 'D') keys.right = false;
+        });
+        
+        // Touch (Mobile)
+        function initTouchControls() {
+            useTouch = true;
+            const btnUp = document.getElementById('btnUp');
+            const btnDown = document.getElementById('btnDown');
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            const btnReset = document.getElementById('btnReset');
+            
+            const setTouch = (dir, active) => { touchState[dir] = active; };
+            
+            btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); setTouch('up', true); });
+            btnUp.addEventListener('touchend', () => setTouch('up', false));
+            btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); setTouch('down', true); });
+            btnDown.addEventListener('touchend', () => setTouch('down', false));
+            btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); setTouch('left', true); });
+            btnLeft.addEventListener('touchend', () => setTouch('left', false));
+            btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); setTouch('right', true); });
+            btnRight.addEventListener('touchend', () => setTouch('right', false));
+            btnReset.addEventListener('click', () => resetGame());
+            
+            // Prevenir scroll ao tocar nos botões
+            [btnUp, btnDown, btnLeft, btnRight, btnReset].forEach(btn => {
+                btn.addEventListener('touchmove', (e) => e.preventDefault());
+            });
+        }
+        
+        // ========== LOOP ==========
+        let lastTime = performance.now() / 1000;
+        
+        function animate() {
+            const now = performance.now() / 1000;
+            let delta = Math.min(0.033, now - lastTime);
+            if (delta <= 0) { lastTime = now; requestAnimationFrame(animate); return; }
+            lastTime = now;
+            
+            if (gameActive && !levelComplete && player) {
+                updateMovement(delta);
+                updateEnemies(delta);
+                checkInteractions(delta);
+                updateCamera();
+            }
+            if (portal && portal.ring) portal.ring.rotation.z += 0.02;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        
+        // ========== INICIAR ==========
+        function init() {
+            loadLevel(1);
+            player = createPlayer();
+            startTimer();
+            initTouchControls();
+            
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('ui').style.display = 'block';
+            }, 1500);
+            
+            animate();
+            showMessage(isMobile ? "👆 Toque nos botões para se mover!" : "🎮 Use WASD ou SETAS para se mover!");
+        }
+        
+        init();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
